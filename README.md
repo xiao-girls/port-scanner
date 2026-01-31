@@ -36,7 +36,7 @@ port-scanner/
 
 1. **克隆项目**
    ```bash
-   git clone <项目地址>
+   git clone https://github.com/xiao-girls/port-scanner.git
    cd port-scanner
    ```
 
@@ -174,12 +174,54 @@ curl -X POST http://localhost:5000/api/scan \
 - **Web界面**：使用HTML、CSS和JavaScript实现前端界面，通过AJAX与API交互
 - **打包工具**：使用`PyInstaller`将项目打包为独立的可执行文件（EXE）
 
+## 环境要求
+
+### 运行环境
+- **Python版本**：3.7+（如果直接运行源代码）
+- **操作系统**：
+  - 源代码：Windows、Linux、macOS
+  - 打包后的EXE文件：仅Windows系统
+- **网络权限**：需要网络访问权限以执行端口扫描
+- **防火墙设置**：如果运行环境有防火墙，可能需要允许程序的网络访问
+
 ### 依赖项
 
 项目使用以下主要依赖项：
 - **Flask 2.0.1**：Web框架，用于实现API接口和Web服务
 - **Click 8.0.1**：命令行参数解析库，用于实现命令行接口
 - **Werkzeug 2.0.1**：WSGI工具库，Flask的依赖项
+
+## 打包方法
+
+如果需要重新打包项目，可以按照以下步骤操作：
+
+### 前提条件
+- 已安装Python 3.7+环境
+- 已安装项目依赖项（`pip install -r requirements.txt`）
+- 已安装PyInstaller（`pip install pyinstaller`）
+
+### 打包步骤
+
+1. **打包命令行工具**
+   ```bash
+   pyinstaller --onefile --icon=img/cmd.ico --name=scan_tool cli_wrapper.py
+   ```
+
+2. **打包Web服务工具**
+   ```bash
+   pyinstaller --onefile --icon=img/web.ico --name=web_tool web_wrapper.py
+   ```
+
+3. **打包结果**
+   打包完成后，生成的EXE文件会位于`dist`目录中：
+   - `dist/scan_tool.exe`：命令行快速扫描工具
+   - `dist/web_tool.exe`：Web服务和API启动工具
+
+### 打包注意事项
+- 打包过程中会自动收集所有必要的依赖项
+- 打包生成的EXE文件较大（约8-10MB），因为包含了完整的Python解释器和依赖项
+- 打包后的EXE文件只能在Windows系统上运行
+- 如果修改了项目代码，需要重新执行打包命令以更新EXE文件
 
 ## API接口
 
