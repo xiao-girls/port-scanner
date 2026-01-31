@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>端口扫描工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        form {
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+        
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .results h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .result-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .open-port {
+            background-color: #e8f5e8;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .closed-port {
+            background-color: #fff3e0;
+            border-left: 4px solid #ff9800;
+        }
+        
+        .error-port {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+        
+        .scan-time {
+            margin-top: 15px;
+            font-style: italic;
+            color: #666;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>端口扫描工具</h1>
+        
+        <form id="scanForm">
+            <div class="form-group">
+                <label for="host">目标主机</label>
+                <input type="text" id="host" name="host" placeholder="例如: 127.0.0.1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="scanType">扫描类型</label>
+                <select id="scanType" name="scanType">
+                    <option value="single">单个端口</option>
+                    <option value="range">端口范围</option>
+                    <option value="common">常用端口</option>
+                </select>
+            </div>
+            
+            <div id="singlePortGroup" class="form-group">
+                <label for="port">端口号</label>
+                <input type="number" id="port" name="port" min="1" max="65535" value="80">
+            </div>
+            
+            <div id="rangePortGroup" class="form-group" style="display: none;">
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label for="startPort">起始端口</label>
+                        <input type="number" id="startPort" name="startPort" min="1" max="65535" value="1">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="endPort">结束端口</label>
+                        <input type="number" id="endPort" name="endPort" min="1" max="65535" value="1024">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="timeout">超时时间(秒)</label>
+                <input type="number" id="timeout" name="timeout" min="0.1" step="0.1" value="1.0">
+            </div>
+            
+            <div class="form-group">
+                <label for="threads">线程数</label>
+                <input type="number" id="threads" name="threads" min="1" max="500" value="100">
+            </div>
+            
+            <button type="submit">开始扫描</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            正在扫描中，请稍候...
+        </div>
+        
+        <div class="results" id="results">
+            <h2>扫描结果</h2>
+            <div id="resultContent">
+                <!-- 结果将在这里显示 -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 扫描类型切换
+        document.getElementById('scanType').addEventListener('change', function() {
+            const scanType = this.value;
+            const singlePortGroup = document.getElementById('singlePortGroup');
+            const rangePortGroup = document.getElementById('rangePortGroup');
+            
+            if (scanType === 'single') {
+                singlePortGroup.style.display = 'block';
+                rangePortGroup.style.display = 'none';
+            } else if (scanType === 'range') {
+                singlePortGroup.style.display = 'none';
+                rangePortGroup.style.display = 'block';
+            } else {
+                singlePortGroup.style.display = 'none';
+                rangePortGroup.style.display = 'none';
+            }
+        });
+        
+        // 表单提交
+        document.getElementById('scanForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 获取并保存按钮原始状态
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            const originalColor = submitButton.style.backgroundColor;
+            
+            // 更改按钮状态
+            submitButton.textContent = '正在扫描中';
+            submitButton.style.backgroundColor = '#ff9800';
+            submitButton.disabled = true;
+            
+            const formData = new FormData(this);
+            const scanType = formData.get('scanType');
+            const host = formData.get('host');
+            const timeout = parseFloat(formData.get('timeout'));
+            const threads = parseInt(formData.get('threads'));
+            
+            let requestData = {
+                host: host,
+                timeout: timeout,
+                threads: threads
+            };
+            
+            if (scanType === 'single') {
+                requestData.port = parseInt(formData.get('port'));
+            } else if (scanType === 'range') {
+                requestData.start_port = parseInt(formData.get('startPort'));
+                requestData.end_port = parseInt(formData.get('endPort'));
+            } else if (scanType === 'common') {
+                requestData.common = true;
+            }
+            
+            // 显示加载状态
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('resultContent').innerHTML = '';
+            
+            // 发送API请求
+            fetch('/api/scan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 隐藏加载状态
+                document.getElementById('loading').classList.remove('show');
+                
+                // 恢复按钮原始状态
+                submitButton.textContent = originalText;
+                submitButton.style.backgroundColor = originalColor;
+                submitButton.disabled = false;
+                
+                // 显示结果
+                const resultContent = document.getElementById('resultContent');
+                
+                if (data.error) {
+                    resultContent.innerHTML = `<div class="result-item error-port">错误: ${data.error}</div>`;
+                } else if (data.port) {
+                    // 单个端口结果
+                    if (data.status.status !== 'closed') {
+                        const statusClass = data.status.status === 'open' ? 'open-port' : 'error-port';
+                        resultContent.innerHTML = `<div class="result-item ${statusClass}">端口 ${data.port}: ${data.status.status}`;
+                        if (data.status.message) {
+                            resultContent.innerHTML += ` (${data.status.message})`;
+                        }
+                        resultContent.innerHTML += '</div>';
+                    } else {
+                        resultContent.innerHTML = `<div class="result-item closed-port">端口 ${data.port} 已关闭</div>`;
+                    }
+                } else {
+                    // 多个端口结果
+                    let html = `<div>主机: ${data.host}</div>`;
+                    html += `<div>开放端口: ${data.open_ports.length}个</div>`;
+                    html += `<div>扫描时间: ${data.scan_time}秒</div>`;
+                    html += '<div style="margin-top: 15px;"><strong>详细结果:</strong></div>';
+                    
+                    data.ports.forEach(portInfo => {
+                        if (portInfo.status !== 'closed') {
+                            const statusClass = portInfo.status === 'open' ? 'open-port' : 'error-port';
+                            html += `<div class="result-item ${statusClass}">端口 ${portInfo.port}: ${portInfo.status}`;
+                            if (portInfo.message) {
+                                html += ` (${portInfo.message})`;
+                            }
+                            html += '</div>';
+                        }
+                    });
+                    
+                    resultContent.innerHTML = html;
+                }
+            })
+            .catch(error => {
+                // 隐藏加载状态
+                document.getElementById('loading').classList.remove('show');
+                
+                // 恢复按钮原始状态
+                submitButton.textContent = originalText;
+                submitButton.style.backgroundColor = originalColor;
+                submitButton.disabled = false;
+                
+                // 显示错误
+                document.getElementById('resultContent').innerHTML = `<div class="result-item error-port">请求错误: ${error.message}</div>`;
+            });
+        });
+    </script>
+</body>
+</html>
