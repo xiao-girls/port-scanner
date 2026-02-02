@@ -14,12 +14,24 @@ if __name__ == '__main__':
         print("端口扫描工具")
         print("=" * 50)
         
-        # 输入主机地址
-        host = input("请输入目标主机地址: ")
-        if not host:
+        # 直接输入主机地址，支持单个或多个（空格分隔）
+        host_input = input("请输入目标主机地址（单个或多个，用空格分隔）: ")
+        if not host_input:
             print("错误: 主机地址不能为空")
             input("按回车键退出...")
             sys.exit(1)
+        
+        host = ""
+        hosts = ""
+        
+        # 根据输入的主机地址数量判断使用哪种参数
+        host_list = host_input.strip().split()
+        if len(host_list) == 1:
+            # 单个主机
+            host = host_list[0]
+        else:
+            # 多个主机
+            hosts = host_input
         
         # 选择扫描类型
         print("\n扫描类型:")
@@ -29,7 +41,12 @@ if __name__ == '__main__':
         
         scan_type = input("请选择扫描类型 (1-3): ")
         
-        args = ['scan', host]
+        args = ['scan']
+        # 根据主机类型设置参数
+        if host:
+            args.append(host)
+        elif hosts:
+            args.extend(['--hosts', hosts])
         
         if scan_type == '1':
             # 单个端口
@@ -63,7 +80,7 @@ if __name__ == '__main__':
             args.extend(['-n', threads])
         
         print("\n扫描参数:")
-        print(f"主机: {host}")
+        print(f"主机: {host if host else hosts}")
         print(f"命令: scan_tool.exe {' '.join(args[1:])}")
         print("\n开始扫描...")
         print("=" * 50)
@@ -84,11 +101,23 @@ if __name__ == '__main__':
                 print("开始新的扫描")
                 print("=" * 50)
                 
-                # 输入主机地址
-                host = input("请输入目标主机地址: ")
-                if not host:
+                # 直接输入主机地址，支持单个或多个（空格分隔）
+                host_input = input("请输入目标主机地址（单个或多个，用空格分隔）: ")
+                if not host_input:
                     print("错误: 主机地址不能为空")
                     continue
+                
+                host = ""
+                hosts = ""
+                
+                # 根据输入的主机地址数量判断使用哪种参数
+                host_list = host_input.strip().split()
+                if len(host_list) == 1:
+                    # 单个主机
+                    host = host_list[0]
+                else:
+                    # 多个主机
+                    hosts = host_input
                 
                 # 选择扫描类型
                 print("\n扫描类型:")
@@ -98,7 +127,12 @@ if __name__ == '__main__':
                 
                 scan_type = input("请选择扫描类型 (1-3): ")
                 
-                args = ['scan', host]
+                args = ['scan']
+                # 根据主机类型设置参数
+                if host:
+                    args.append(host)
+                elif hosts:
+                    args.extend(['--hosts', hosts])
                 
                 if scan_type == '1':
                     # 单个端口
@@ -131,7 +165,7 @@ if __name__ == '__main__':
                     args.extend(['-n', threads])
                 
                 print("\n扫描参数:")
-                print(f"主机: {host}")
+                print(f"主机: {host if host else hosts}")
                 print(f"命令: scan_tool.exe {' '.join(args[1:])}")
                 print("\n开始扫描...")
                 print("=" * 50)
